@@ -360,6 +360,90 @@ app.put('/api/users/:id', authenticateToken, requireRole(['admin', 'hr_manager']
   }
 });
 
+// Admin-specific user management routes
+app.get('/api/admin/users', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const users = await User.find({}, '-password');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/admin/users', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const { name, email, password, role, status } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username: email.split('@')[0] }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const user = new User({
+      username: email.split('@')[0],
+      email,
+      password: hashedPassword,
+      firstName: name.split(' ')[0] || '',
+      lastName: name.split(' ').slice(1).join(' ') || '',
+      department: 'General',
+      role: role || 'hr_staff',
+      isActive: status === 'active'
+    });
+    
+    await user.save();
+    
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    res.status(201).json(userResponse);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/admin/users/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const { password, ...updateData } = req.body;
+    let updateFields = updateData;
+    
+    if (password) {
+      updateFields.password = await bcrypt.hash(password, 10);
+    }
+    
+    const user = await User.findByIdAndUpdate(req.params.id, updateFields, { new: true, select: '-password' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Prevent admin from deleting themselves
+    if (user._id.toString() === req.user.userId) {
+      return res.status(400).json({ message: 'Cannot delete your own account' });
+    }
+    
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Enhanced Jobs API with authentication
 app.get('/api/jobs', authenticateToken, async (req, res) => {
   try {
