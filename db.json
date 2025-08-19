@@ -1,4 +1,18 @@
 {
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@payday.com",
+      "password": "$2a$10$rQZ9K8mN2pL1vX7yJ3hF6gT4sA9qW2eR5tY8uI1oP3aZ6x7cV9bN4mK8jH2gF5dS",
+      "role": "admin",
+      "firstName": "Admin",
+      "lastName": "User",
+      "department": "IT",
+      "isActive": true,
+      "lastLogin": "2024-01-15T10:00:00Z"
+    }
+  ],
   "jobs": [
     {
       "id": 1,

@@ -52,19 +52,24 @@ const upload = multer({
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/payday-dashboard', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/payday-dashboard', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('✅ Connected to MongoDB');
+  } catch (error) {
+    console.log('⚠️  MongoDB connection failed. Starting server without database...');
+    console.log('💡 To use full features, start MongoDB or set MONGODB_URI environment variable');
+    console.log('💡 For development, you can use: npm run api (JSON Server)');
+  }
+};
 
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-db.once('open', () => {
-  console.log('Connected to MongoDB');
-});
+connectDB();
 
 // Email configuration
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER || 'your-email@gmail.com',
@@ -233,10 +238,29 @@ const replaceTemplateVariables = (template, variables) => {
 // Authentication Routes
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, department, role } = req.body;
+    const { name, email, password, username, firstName, lastName, department, role } = req.body;
+    
+    // Handle both frontend formats: 'name' (full name) or individual 'firstName'/'lastName'
+    let finalFirstName, finalLastName, finalUsername;
+    
+    if (name && !firstName && !lastName) {
+      // Frontend sends 'name' (full name) - split it
+      const nameParts = name.trim().split(' ');
+      finalFirstName = nameParts[0] || '';
+      finalLastName = nameParts.slice(1).join(' ') || '';
+      finalUsername = email.split('@')[0]; // Use email prefix as username
+    } else {
+      // Backend sends individual fields
+      finalFirstName = firstName || '';
+      finalLastName = lastName || '';
+      finalUsername = username || email.split('@')[0];
+    }
+    
+    // Set default department if not provided
+    const finalDepartment = department || 'General';
     
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({ $or: [{ email }, { username: finalUsername }] });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -246,12 +270,12 @@ app.post('/api/auth/register', async (req, res) => {
     
     // Create user
     const user = new User({
-      username,
+      username: finalUsername,
       email,
       password: hashedPassword,
-      firstName,
-      lastName,
-      department,
+      firstName: finalFirstName,
+      lastName: finalLastName,
+      department: finalDepartment,
       role: role || 'hr_staff'
     });
     
@@ -463,7 +487,7 @@ app.post('/api/email-templates', authenticateToken, requireRole(['admin', 'hr_ma
     const newTemplate = await template.save();
     res.status(201).json(newTemplate);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -643,8 +667,173 @@ app.delete('/api/jobs/:id', authenticateToken, requireRole(['admin', 'hr_manager
   }
 });
 
-// Keep other existing routes with authentication...
-// (Candidates, Applications, Interviews APIs remain the same but with authenticateToken middleware)
+// Candidates API
+app.get('/api/candidates', authenticateToken, async (req, res) => {
+  try {
+    const candidates = await Candidate.find();
+    res.json(candidates);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/candidates', authenticateToken, async (req, res) => {
+  try {
+    const candidate = new Candidate(req.body);
+    const newCandidate = await candidate.save();
+    res.status(201).json(newCandidate);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
+  try {
+    const candidate = await Candidate.findById(req.params.id);
+    if (!candidate) {
+      return res.status(404).json({ message: 'Candidate not found' });
+    }
+    res.json(candidate);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/candidates/:id', authenticateToken, async (req, res) => {
+  try {
+    const candidate = await Candidate.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!candidate) {
+      return res.status(404).json({ message: 'Candidate not found' });
+    }
+    res.json(candidate);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/candidates/:id', authenticateToken, async (req, res) => {
+  try {
+    const candidate = await Candidate.findByIdAndDelete(req.params.id);
+    if (!candidate) {
+      return res.status(404).json({ message: 'Candidate not found' });
+    }
+    res.json({ message: 'Candidate deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Applications API
+app.get('/api/applications', authenticateToken, async (req, res) => {
+  try {
+    const applications = await Application.find()
+      .populate('jobId', 'title department')
+      .populate('candidateId', 'name email');
+    res.json(applications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/applications/:id', authenticateToken, async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.id)
+      .populate('jobId', 'title department')
+      .populate('candidateId', 'name email');
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    res.json(application);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/applications/:id', authenticateToken, async (req, res) => {
+  try {
+    const application = await Application.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    res.json(application);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/applications/:id', authenticateToken, async (req, res) => {
+  try {
+    const application = await Application.findByIdAndDelete(req.params.id);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    res.json({ message: 'Application deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Interviews API
+app.get('/api/interviews', authenticateToken, async (req, res) => {
+  try {
+    const interviews = await Interview.find()
+      .populate('candidateId', 'name email')
+      .populate('jobId', 'title department')
+      .populate('interviewer', 'firstName lastName');
+    res.json(interviews);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/interviews', authenticateToken, async (req, res) => {
+  try {
+    const interview = new Interview(req.body);
+    const newInterview = await interview.save();
+    res.status(201).json(newInterview);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.get('/api/interviews/:id', authenticateToken, async (req, res) => {
+  try {
+    const interview = await Interview.findById(req.params.id)
+      .populate('candidateId', 'name email')
+      .populate('jobId', 'title department')
+      .populate('interviewer', 'firstName lastName');
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+    res.json(interview);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/interviews/:id', authenticateToken, async (req, res) => {
+  try {
+    const interview = await Interview.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+    res.json(interview);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/interviews/:id', authenticateToken, async (req, res) => {
+  try {
+    const interview = await Interview.findByIdAndDelete(req.params.id);
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+    res.json({ message: 'Interview deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
