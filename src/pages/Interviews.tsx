@@ -14,8 +14,6 @@ import {
   HiLocationMarker,
   HiCheckCircle,
   HiXCircle,
-  HiClock as HiClockIcon,
-  HiMail,
   HiBriefcase,
   HiStar
 } from 'react-icons/hi'

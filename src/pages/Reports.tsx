@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import { 
   HiDownload, 
-  HiCalendar, 
   HiUsers, 
-  HiBriefcase, 
   HiDocumentText, 
   HiCheckCircle,
-  HiXCircle,
   HiClock,
   HiTrendingUp,
-  HiTrendingDown,
-  HiFilter
+  HiTrendingDown
 } from 'react-icons/hi'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
 
 const timeRanges = [
   { value: '7D', label: 'Last 7 Days' },

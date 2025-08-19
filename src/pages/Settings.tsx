@@ -6,13 +6,10 @@ import {
   HiShieldCheck, 
   HiGlobe, 
   HiKey,
-  HiTrash,
   HiDownload,
-  HiUpload,
   HiEye,
   HiEyeOff,
-  HiCheck,
-  HiX
+  HiCheck
 } from 'react-icons/hi'
 
 interface UserProfile {

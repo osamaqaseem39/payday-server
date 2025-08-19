@@ -11,7 +11,7 @@ import {
   HiClock,
   HiXCircle
 } from 'react-icons/hi'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import LoanCalculator from '../components/LoanCalculator'
 
 const stats = [

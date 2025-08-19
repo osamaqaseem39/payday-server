@@ -1,4 +1,4 @@
-import { jobsApi } from './api';
+
 
 const API_BASE_URL = 'http://localhost:3002/api';
 
@@ -169,7 +169,7 @@ class AuthService {
     return this.user ? roles.includes(this.user.role) : false;
   }
 
-  hasPermission(resource: string, action: string): boolean {
+  hasPermission(resource: string): boolean {
     if (!this.user) return false;
     
     // Admin has all permissions
@@ -208,7 +208,7 @@ class AuthService {
     localStorage.setItem('authUser', JSON.stringify(authData.user));
   }
 
-  private clearAuth(): void {
+  clearAuth(): void {
     this.token = null;
     this.user = null;
     localStorage.removeItem('authToken');
