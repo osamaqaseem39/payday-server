@@ -989,5 +989,5 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Export for Vercel
+// Export for Vercel - Production Ready
 module.exports = app; 
