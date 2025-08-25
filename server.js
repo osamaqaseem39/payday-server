@@ -982,7 +982,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Enhanced HR Dashboard Server is running on port ${PORT}`);
-  console.log('Features: Authentication, Role-based Access, Email Notifications, File Uploads, Advanced Reporting');
-}); 
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Enhanced HR Dashboard Server is running on port ${PORT}`);
+    console.log('Features: Authentication, Role-based Access, Email Notifications, File Uploads, Advanced Reporting');
+  });
+}
+
+// Export for Vercel
+module.exports = app; 
