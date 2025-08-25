@@ -34,4 +34,7 @@ uploads/
 
 # Cache
 .cache/
-.vite/ 
+.vite/
+
+# Documentation
+DEPLOYMENT.md 
