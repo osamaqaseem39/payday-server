@@ -1,115 +1,151 @@
-# Payday Server
+# Payday HR Dashboard Server
 
-A pure Express.js backend server for the Payday application, providing authentication, user management, and HR dashboard functionality.
+A comprehensive HR management system built with Node.js, Express, and MongoDB.
 
-## Features
+## 🏗️ Project Structure
 
-- **Authentication System**: JWT-based authentication with bcrypt password hashing
-- **User Management**: Role-based access control (admin, hr_manager, hr_staff, interviewer)
-- **MongoDB Integration**: Mongoose ODM for database operations
-- **Email Notifications**: Nodemailer integration for sending emails
-- **File Uploads**: Multer middleware for handling file uploads
-- **RESTful API**: Complete REST API for all CRUD operations
-- **CORS Support**: Cross-origin resource sharing enabled
-- **Environment Configuration**: dotenv for environment variable management
+```
+payday-dashboard/
+├── src/
+│   ├── config/
+│   │   └── database.js          # Database connection configuration
+│   ├── controllers/
+│   │   ├── authController.js    # Authentication logic
+│   │   └── jobController.js     # Job management logic
+│   ├── middleware/
+│   │   ├── auth.js              # Authentication & authorization middleware
+│   │   └── upload.js            # File upload middleware
+│   ├── models/
+│   │   ├── User.js              # User model
+│   │   ├── Job.js               # Job model
+│   │   ├── Candidate.js         # Candidate model
+│   │   ├── Application.js       # Application model
+│   │   ├── Interview.js         # Interview model
+│   │   └── EmailTemplate.js     # Email template model
+│   ├── routes/
+│   │   ├── auth.js              # Authentication routes
+│   │   └── jobs.js              # Job management routes
+│   └── utils/
+│       └── email.js             # Email utility functions
+├── server.js                    # Main server file
+├── package.json
+├── vercel.json                  # Vercel deployment configuration
+└── README.md
+```
 
-## API Endpoints
+## 🚀 Features
+
+- **Authentication & Authorization**: JWT-based authentication with role-based access control
+- **Job Management**: Create, read, update, and delete job postings
+- **Candidate Management**: Track candidate information and applications
+- **Interview Scheduling**: Manage interview processes
+- **Email Notifications**: Automated email notifications
+- **File Uploads**: Resume and document upload functionality
+- **Advanced Reporting**: Hiring metrics and analytics
+
+## 🛠️ API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - User registration
+- `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user info
-
-### User Management
-- `GET /api/users` - List all users (admin only)
-- `GET /api/admin/users` - List all users (admin only)
-- `POST /api/admin/users` - Create new user (admin only)
-- `PUT /api/admin/users/:id` - Update user (admin only)
-- `DELETE /api/admin/users/:id` - Delete user (admin only)
 
 ### Jobs
-- `GET /api/jobs` - List all jobs
+- `GET /api/jobs` - Get all jobs (with filters)
 - `POST /api/jobs` - Create new job
+- `GET /api/jobs/:id` - Get job by ID
 - `PUT /api/jobs/:id` - Update job
 - `DELETE /api/jobs/:id` - Delete job
 
-### Candidates
-- `GET /api/candidates` - List all candidates
-- `POST /api/candidates` - Create new candidate
-- `PUT /api/candidates/:id` - Update candidate
-- `DELETE /api/candidates/:id` - Delete candidate
+### Health Check
+- `GET /api/health` - Server health status
 
-### Applications
-- `GET /api/applications` - List all applications
-- `POST /api/applications` - Create new application
-- `PUT /api/applications/:id` - Update application
-- `DELETE /api/applications/:id` - Delete application
+## 🔧 Setup
 
-### Interviews
-- `GET /api/interviews` - List all interviews
-- `POST /api/interviews` - Create new interview
-- `PUT /api/interviews/:id` - Update interview
-- `DELETE /api/interviews/:id` - Delete interview
-
-### Reports
-- `GET /api/reports/hiring-metrics` - Hiring metrics (admin/hr_manager)
-- `GET /api/reports/candidate-pipeline` - Candidate pipeline (admin/hr_manager)
-
-## Setup
-
-1. **Install Dependencies**
+1. **Install Dependencies**:
    ```bash
    npm install
    ```
 
-2. **Environment Variables**
+2. **Environment Variables**:
    Create a `.env` file with:
    ```
    MONGODB_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
-   PORT=3002
-   EMAIL_USER=your_email
-   EMAIL_PASS=your_email_password
+   EMAIL_USER=your_email@gmail.com
+   EMAIL_PASS=your_app_password
    ```
 
-3. **Start Server**
+3. **Run Development Server**:
    ```bash
-   npm start
-   # or
    npm run dev
    ```
 
-## Deployment
+## 🚀 Deployment
 
-This server is configured for deployment on Vercel with the included `vercel.json` configuration file.
+### Vercel Deployment
+The project is configured for Vercel deployment with:
+- Serverless function configuration
+- Environment variable support
+- Automatic routing
 
-## Database Schema
+### Environment Variables for Production
+Set these in your Vercel dashboard:
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `EMAIL_USER`
+- `EMAIL_PASS`
 
-### User Model
-- `username`: String (unique)
-- `email`: String (unique)
-- `password`: String (hashed)
-- `firstName`: String
-- `lastName`: String
-- `department`: String
-- `role`: Enum (admin, hr_manager, hr_staff, interviewer)
-- `isActive`: Boolean
-- `createdAt`: Date
+## 📝 Code Organization
 
-## Security Features
+### Models
+Each model is in its own file under `src/models/` with proper schema definitions.
 
-- Password hashing with bcrypt
+### Controllers
+Business logic is separated into controllers under `src/controllers/`:
+- `authController.js` - Authentication operations
+- `jobController.js` - Job management operations
+
+### Routes
+API routes are organized by feature under `src/routes/`:
+- `auth.js` - Authentication routes
+- `jobs.js` - Job management routes
+
+### Middleware
+Reusable middleware functions under `src/middleware/`:
+- `auth.js` - Authentication and authorization
+- `upload.js` - File upload handling
+
+### Utils
+Utility functions under `src/utils/`:
+- `email.js` - Email sending functionality
+
+## 🔒 Security Features
+
 - JWT token authentication
-- Role-based access control
-- CORS protection
+- Role-based access control (admin, hr_manager, hr_staff, interviewer)
+- Password hashing with bcrypt
 - Input validation and sanitization
+- CORS configuration
 
-## Technologies Used
+## 📊 Database Schema
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose
-- **Authentication**: JWT + bcrypt
-- **File Handling**: Multer
-- **Email**: Nodemailer
-- **Environment**: dotenv 
+The application uses MongoDB with the following collections:
+- **Users**: Staff and admin accounts
+- **Jobs**: Job postings and requirements
+- **Candidates**: Candidate information
+- **Applications**: Job applications
+- **Interviews**: Interview scheduling and feedback
+- **EmailTemplates**: Reusable email templates
+
+## 🤝 Contributing
+
+1. Follow the established folder structure
+2. Add new models in `src/models/`
+3. Create controllers in `src/controllers/`
+4. Define routes in `src/routes/`
+5. Add middleware in `src/middleware/`
+6. Update this README with new features
+
+## 📄 License
+
+This project is licensed under the MIT License. 
