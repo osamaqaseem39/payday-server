@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo 'No build step needed for Express server'"
+    "build": "echo 'No build step needed for Express server'",
+    "setup": "node quick-setup.js",
+    "test-mongo": "node test-mongo.js"
   },
   "dependencies": {
     "express": "^4.18.2",

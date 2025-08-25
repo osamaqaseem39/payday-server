@@ -54,19 +54,35 @@ const upload = multer({
 // MongoDB Connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/payday-dashboard', {
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      console.log('⚠️  MONGODB_URI environment variable not set');
+      console.log('💡 Please set MONGODB_URI in your environment variables');
+      console.log('💡 For Vercel deployment, add it in the Vercel dashboard');
+      return false;
+    }
+    
+    await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // 10 seconds
+      socketTimeoutMS: 45000, // 45 seconds
     });
     console.log('✅ Connected to MongoDB');
+    return true;
   } catch (error) {
-    console.log('⚠️  MongoDB connection failed. Starting server without database...');
-    console.log('💡 To use full features, start MongoDB or set MONGODB_URI environment variable');
-    console.log('💡 For development, you can use: npm run api (JSON Server)');
+    console.error('❌ MongoDB connection failed:', error.message);
+    console.log('💡 Please check your MONGODB_URI and network connection');
+    console.log('💡 For Vercel deployment, ensure MONGODB_URI is set in environment variables');
+    return false;
   }
 };
 
-connectDB();
+// Initialize database connection
+let dbConnected = false;
+connectDB().then(connected => {
+  dbConnected = connected;
+});
 
 // Email configuration
 const transporter = nodemailer.createTransport({
@@ -289,6 +305,12 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
+    if (!dbConnected) {
+      return res.status(503).json({ 
+        message: 'Database connection not available. Please check server configuration.' 
+      });
+    }
+    
     const { email, password } = req.body;
     
     // Find user
@@ -327,7 +349,8 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again.' });
   }
 });
 
@@ -447,6 +470,12 @@ app.delete('/api/admin/users/:id', authenticateToken, requireRole(['admin']), as
 // Enhanced Jobs API with authentication
 app.get('/api/jobs', authenticateToken, async (req, res) => {
   try {
+    if (!dbConnected) {
+      return res.status(503).json({ 
+        message: 'Database connection not available. Please check server configuration.' 
+      });
+    }
+    
     const { status, department, type, search } = req.query;
     let query = {};
     
@@ -463,7 +492,8 @@ app.get('/api/jobs', authenticateToken, async (req, res) => {
     const jobs = await Job.find(query).populate('createdBy', 'firstName lastName');
     res.json(jobs);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Jobs API error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again.' });
   }
 });
 
@@ -754,10 +784,17 @@ app.delete('/api/jobs/:id', authenticateToken, requireRole(['admin', 'hr_manager
 // Candidates API
 app.get('/api/candidates', authenticateToken, async (req, res) => {
   try {
+    if (!dbConnected) {
+      return res.status(503).json({ 
+        message: 'Database connection not available. Please check server configuration.' 
+      });
+    }
+    
     const candidates = await Candidate.find();
     res.json(candidates);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Candidates API error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again.' });
   }
 });
 
@@ -810,12 +847,19 @@ app.delete('/api/candidates/:id', authenticateToken, async (req, res) => {
 // Applications API
 app.get('/api/applications', authenticateToken, async (req, res) => {
   try {
+    if (!dbConnected) {
+      return res.status(503).json({ 
+        message: 'Database connection not available. Please check server configuration.' 
+      });
+    }
+    
     const applications = await Application.find()
       .populate('jobId', 'title department')
       .populate('candidateId', 'name email');
     res.json(applications);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Applications API error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again.' });
   }
 });
 
@@ -860,13 +904,20 @@ app.delete('/api/applications/:id', authenticateToken, async (req, res) => {
 // Interviews API
 app.get('/api/interviews', authenticateToken, async (req, res) => {
   try {
+    if (!dbConnected) {
+      return res.status(503).json({ 
+        message: 'Database connection not available. Please check server configuration.' 
+      });
+    }
+    
     const interviews = await Interview.find()
       .populate('candidateId', 'name email')
       .populate('jobId', 'title department')
       .populate('interviewer', 'firstName lastName');
     res.json(interviews);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Interviews API error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again.' });
   }
 });
 
@@ -921,7 +972,13 @@ app.delete('/api/interviews/:id', authenticateToken, async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    database: dbConnected ? 'connected' : 'disconnected',
+    environment: process.env.NODE_ENV || 'development',
+    mongodb_uri_set: !!process.env.MONGODB_URI
+  });
 });
 
 // Start server
